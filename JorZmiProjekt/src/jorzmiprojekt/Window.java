@@ -31,6 +31,7 @@ public class Window extends javax.swing.JFrame {
     String primaryKey = null;
     int primKeyPosition = 0;
     DefaultTableModel tableModel;
+    int index=0;
     
     public Window() {
         initComponents();
@@ -246,7 +247,7 @@ public class Window extends javax.swing.JFrame {
         String password = PasswordField.getText();
         String database = DatabaseField.getText();
         String server = ServerField.getText();
-
+        
         int port = 0;
         try {
             port = Integer.parseInt(PortField.getText());
@@ -265,6 +266,7 @@ public class Window extends javax.swing.JFrame {
             conButton.setEnabled(false);
             discButton.setEnabled(true);
             dropdown.setEnabled(true);
+            values();
             
             MD = conn.getMetaData();
             ResultSet res_prim = MD.getPrimaryKeys(null, null, "city");
@@ -401,24 +403,65 @@ public class Window extends javax.swing.JFrame {
     }//GEN-LAST:event_dropdownActionPerformed
 
     private void insertButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_insertButtonActionPerformed
-        // TODO add your handling code here:
+        try { 
+            int num_cols=0;
+            int lastRow=table.getModel().getRowCount()-1;
+            ResultSet rs =MD.getColumns(null, null, dropdown.getItemAt(index).toString(), null);
+            String sql="INSERT INTO city (";
+            rs.next();
+            while(rs.next()){
+                sql+=rs.getString(4)+",";
+                num_cols++;
+            }
+            sql = sql.substring(0, sql.length() - 1);
+            sql+=") VALUES (";
+         
+            for(int i=0;i<num_cols;i++){
+                sql+="?,";
+//                sql+=tableResults.getModel().getValueAt(lastRow, i+1)+",";
+            }
+            sql = sql.substring(0, sql.length() - 1);
+            sql+=");";
+            System.out.println(sql);
+            PreparedStatement prepInsert=conn.prepareStatement(sql);
+            for(int i=0;i<num_cols;i++){
+                prepInsert.setString(i+1, ""+table.getModel().getValueAt(lastRow, i+1));
+            }
+            
+            prepInsert.executeUpdate();
+        } catch (SQLException ex) {
+            Logger.getLogger(Window.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }//GEN-LAST:event_insertButtonActionPerformed
 
     private void deleteButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_deleteButtonActionPerformed
 
         int row= table.getSelectedRow();
         int id =  Integer.parseInt(table.getModel().getValueAt(row, primKeyPosition).toString());
-        try{      
-            PreparedStatement delete=conn.prepareStatement("DELETE from city WHERE id = ?;");
-             delete.setInt(1, id);
-             delete.executeUpdate();
-             tableModel.removeRow(row);
-             System.out.println(delete);
-        }catch(Exception e){
-                JOptionPane.showMessageDialog(null, e);
-        }
-    }//GEN-LAST:event_deleteButtonActionPerformed
+        
+            try{      
+                PreparedStatement delete=conn.prepareStatement("DELETE from city WHERE id = ?;");
+                delete.setInt(1, id);
+                delete.executeUpdate();
+                tableModel.removeRow(row);
 
+            }catch(SQLException e){
+                  Logger.getLogger(Window.class.getName()).log(Level.SEVERE, null, e);  
+            }
+       
+    }//GEN-LAST:event_deleteButtonActionPerformed
+    private void values(){
+        try {
+            MD=conn.getMetaData();
+            ResultSet r=MD.getTables(null, null,null,null);
+            while(r.next()){
+                dropdown.addItem(r.getString(3));
+            }
+        } catch (SQLException ex) {
+            Logger.getLogger(Window.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        
+    }
     public static void main(String args[]) {
         
         java.awt.EventQueue.invokeLater(new Runnable() {
