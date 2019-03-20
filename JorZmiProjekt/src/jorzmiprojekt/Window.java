@@ -15,7 +15,6 @@ import java.sql.Statement;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.DefaultComboBoxModel;
-import javax.swing.JOptionPane;
 import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
 import javax.swing.table.DefaultTableModel;
@@ -25,22 +24,22 @@ import javax.swing.table.DefaultTableModel;
  * @author Firstech
  */
 public class Window extends javax.swing.JFrame {
-
+    //Erstellung von Grund-Variablen
     DatabaseMetaData MD = null;
     private Connection conn = null;
     String primaryKey = null;
     int primKeyPosition = 0;
     DefaultTableModel tableModel;
-    int index=0;
+    int index = 0;
     
     public Window() {
         initComponents();
         
+        // Driver laden bzw finden
         try {
-            Class.forName("com.mysql.jdbc.Driver");
+            Class.forName("com.mysql.jdbc.Driver"); 
         } catch (ClassNotFoundException ex) {
-            System.out.println("Could not load mysql driver!");
-            javax.swing.JOptionPane.showMessageDialog(this, "Error loading MySQL Driver");
+            System.out.println("Driber nicht gefunden");
             System.exit(1);
         }
     }
@@ -243,21 +242,25 @@ public class Window extends javax.swing.JFrame {
     }//GEN-LAST:event_cbxTablesActionPerformed
 
     private void conButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_conButtonActionPerformed
+        // Die Daten, die in den TextFields sind, werden in Variablen gepeichert
         String user = UserField.getText();
         String password = PasswordField.getText();
         String database = DatabaseField.getText();
         String server = ServerField.getText();
+        int port = 0; // Wichtig fur die Uberprufung
         
-        int port = 0;
+        // Uberprufung von Port Zahl
         try {
             port = Integer.parseInt(PortField.getText());
         } catch (NumberFormatException ex) {
             System.out.println("Please insert a correct port number!");
             javax.swing.JOptionPane.showMessageDialog(this, "Please insert a correct port number");
         }
-
+        
+        // Connection erstellen
         try {
             conn = DriverManager.getConnection("jdbc:mysql://" + server + ":" + port + "/" + database, user, password);
+            // setEnable auf false, damit man kein Zugriff auf denen hat
             UserField.setEnabled(false);
             PasswordField.setEnabled(false);
             DatabaseField.setEnabled(false);
@@ -266,202 +269,164 @@ public class Window extends javax.swing.JFrame {
             conButton.setEnabled(false);
             discButton.setEnabled(true);
             dropdown.setEnabled(true);
-            values();
+            dropdownValues(); //Dropdown Liste
             
+            //PrimaryKeyfinden
             MD = conn.getMetaData();
             ResultSet res_prim = MD.getPrimaryKeys(null, null, "city");
             res_prim.next();
             primaryKey = res_prim.getString(4);
-            primKeyPosition =res_prim.getInt("KEY_SEQ")-1;
-            System.out.println("Primary Key Position "+primKeyPosition);
-            System.out.println("Primary Key " + res_prim.getString(4));
-
+            primKeyPosition = res_prim.getInt("KEY_SEQ")-1;
         } catch (SQLException ex) {
-            System.out.println("Could not connect to world database!");
-            javax.swing.JOptionPane.showMessageDialog(this, "Could not connect to Server");
-        }
-
-        /* OPTIONAL LIST TABLES */
-        try {
-            MD = conn.getMetaData();
-
-            ResultSet rs = MD.getTables(null, null, null, null);
-            while (rs.next()) {
-                dropdown.addItem(rs.getString(3));
-                //System.out.println(rs.getString(3));
-            }
-        } catch (SQLException ex) {
-            System.out.println("Could not retrieve database meta-data");
-            javax.swing.JOptionPane.showMessageDialog(this, "Could not retrieve database meta-data");
+            System.out.println("Fehler bei Erstellung einer Sitzung mit der DB");
         }
     }//GEN-LAST:event_conButtonActionPerformed
 
     private void discButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_discButtonActionPerformed
-        
+        //Schliessen von der Sitzung
         try {
             conn.close();
-
+            // setEnable auf true, damit man spater eine Sitzung erstellen kann
             UserField.setEnabled(true);
             PasswordField.setEnabled(true);
             DatabaseField.setEnabled(true);
             ServerField.setEnabled(true);
             PortField.setEnabled(true);
-
             conButton.setEnabled(true);
             discButton.setEnabled(false);
-
             dropdown.setModel(new DefaultComboBoxModel<String>());
             dropdown.setEnabled(false);
-
             table.setModel(new DefaultTableModel());
             table.setEnabled(false);
         } catch (SQLException ex) {
-            System.out.println("Error closing database connection");
-            javax.swing.JOptionPane.showMessageDialog(this, "Error closing database connection");
+            System.out.println("Fehler bei das Schliessen von Sitzung");
         }
-
-
     }//GEN-LAST:event_discButtonActionPerformed
-        private void tableModelChanged(TableModelEvent e){
-        System.out.println("table changed");
+    
+    private void tableModelChanged(TableModelEvent e){    
+        //Methoder fur die Update von Daten
         int row = e.getFirstRow();
-        String columnName = 
-        table.getModel().getColumnName(e.getColumn());
-                
-        int id = 
-                Integer.parseInt(table.getModel().getValueAt(row, primKeyPosition).toString());
-          System.out.println(columnName +" " +  id);
-
-        String entry_changed = 
-                table.getModel().getValueAt(row, e.getColumn()).toString();  
+        String columnName = table.getModel().getColumnName(e.getColumn());     
+        int id = Integer.parseInt(table.getModel().getValueAt(row, primKeyPosition).toString());
+        String entryChanged =  table.getModel().getValueAt(row, e.getColumn()).toString();  
+        
         try {
-            PreparedStatement update =
-                    conn.prepareStatement(
-                            "UPDATE city SET "+ columnName + "= ? WHERE " + primaryKey + " = ?");
-            update.setString(1, entry_changed);
+            PreparedStatement update = conn.prepareStatement("UPDATE city SET "+ columnName + "= ? WHERE " + primaryKey + " = ?");
+            update.setString(1, entryChanged);
             update.setInt(2, id);
             System.out.println(update);
             System.out.println(update.executeUpdate() + " rows changed");
             
         } catch (SQLException ex) {
-            System.out.println("Error updating table");
-            javax.swing.JOptionPane.showMessageDialog(this, "Error updating table");
+            System.out.println("Felher bei Update");
         }
     }
         
     private void dropdownActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_dropdownActionPerformed
+        //Selktieren von Daten, wenn man bei DropdownMenu ein Tablle wahtl
         int num_columns = 0;
-
         try {
-            ResultSet result = MD.getColumns(
-                    null, null, dropdown.getSelectedItem().toString(), null);
-
-            //tblEntries.removeAll();
+            ResultSet result = MD.getColumns(null, null, dropdown.getSelectedItem().toString(), null);
             tableModel = new DefaultTableModel();
-
             while (result.next()) {
-                String columnName = result.getString(4);
-
-                tableModel.addColumn(columnName);
+                String columnName = result.getString(4); // Wenn mehr Colums gibt als die Tabelle bei der GUI, dann werden
+                tableModel.addColumn(columnName);       // andere Spalten zugefugt.
                 num_columns++;
-                //               int columnType = result.getInt(5);
             }
             table.setModel(tableModel);
 
         } catch (SQLException ex) {
-            System.out.println("Error building column structure for table " + dropdown.getSelectedItem().toString());
-            javax.swing.JOptionPane.showMessageDialog(this, "Error building column structure for table " + dropdown.getSelectedItem().toString());
+            System.out.println("Felher bei Darstellung von Spalten" + dropdown.getSelectedItem().toString());
         }
 
-        Statement stmt;
+        Statement stm;
         try {
-            stmt = conn.createStatement();
-            ResultSet res = stmt.executeQuery("SELECT * FROM " + dropdown.getSelectedItem().toString());
+            stm = conn.createStatement(); // Erstellung einer Statement, die all Daten der Tabelle selektiert.
+            ResultSet res = stm.executeQuery("SELECT * FROM " + dropdown.getSelectedItem().toString());
 
-            while (res.next()) {
+            while (res.next()) { //Selektierung von Daten Zeile fur Zeile
                 Object[] row = new Object[num_columns];
-                for (int i = 1; i <= num_columns; i++) {
-                    row[i - 1] = res.getObject(i);
+                for (int i=1; i<=num_columns; i++) {
+                    row[i-1] = res.getObject(i);
                 }
-                ((DefaultTableModel) table.getModel()).insertRow(res.getRow() - 1, row);
+                ((DefaultTableModel) table.getModel()).insertRow(res.getRow()-1, row);
             }
             
             table.getModel().addTableModelListener(new TableModelListener() {
                 @Override
-                public void tableChanged(TableModelEvent e) {
-                    System.out.println("table changed");
+                public void tableChanged(TableModelEvent e) {   //Table wurde aktualisiert
+                    System.out.println("Table Updated");
                     tableModelChanged(e);
                 }
             });
 
         } catch (SQLException ex) {
-            System.out.println("Error building result table from database");
-            javax.swing.JOptionPane.showMessageDialog(this, "Error building result table from database");
+            System.out.println("Felher bei Darstellung von Datenbank");
         }
-
-
     }//GEN-LAST:event_dropdownActionPerformed
 
     private void insertButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_insertButtonActionPerformed
+        //Insert von neue Zeile
         try { 
-            int num_cols=0;
+            // Die letzte Zeile wird kopiert und dann zugefugt.
+            int numCol=0;
             int lastRow=table.getModel().getRowCount()-1;
-            ResultSet rs =MD.getColumns(null, null, dropdown.getItemAt(index).toString(), null);
+            ResultSet res =MD.getColumns(null, null, dropdown.getItemAt(index).toString(), null);
             String sql="INSERT INTO city (";
-            rs.next();
-            while(rs.next()){
-                sql+=rs.getString(4)+",";
-                num_cols++;
-            }
-            sql = sql.substring(0, sql.length() - 1);
-            sql+=") VALUES (";
-         
-            for(int i=0;i<num_cols;i++){
-                sql+="?,";
-//                sql+=tableResults.getModel().getValueAt(lastRow, i+1)+",";
-            }
-            sql = sql.substring(0, sql.length() - 1);
-            sql+=");";
-            System.out.println(sql);
-            PreparedStatement prepInsert=conn.prepareStatement(sql);
-            for(int i=0;i<num_cols;i++){
-                prepInsert.setString(i+1, ""+table.getModel().getValueAt(lastRow, i+1));
+            res.next();
+            
+            while(res.next()){  //Die Namen der Spalten werden genommen
+                sql+=res.getString(4)+",";
+                numCol++;
             }
             
-            prepInsert.executeUpdate();
+            sql = sql.substring(0, sql.length()-1);
+            sql+=") VALUES (";
+         
+            for(int i=0; i<numCol; i++){    //Die Daten der Zeile werden genommen
+                sql+="?,";
+            }
+            sql = sql.substring(0, sql.length()-1);
+            sql+=");";
+            PreparedStatement prepInsert = conn.prepareStatement(sql);
+            
+            for(int i=0; i<numCol; i++){
+                prepInsert.setString(i+1, ""+table.getModel().getValueAt(lastRow, i+1)); //Einfugen der neue Zeile
+            }
+            prepInsert.executeUpdate(); //Statement Execute
+            
         } catch (SQLException ex) {
             Logger.getLogger(Window.class.getName()).log(Level.SEVERE, null, ex);
         }
     }//GEN-LAST:event_insertButtonActionPerformed
 
     private void deleteButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_deleteButtonActionPerformed
-
-        int row= table.getSelectedRow();
-        int id =  Integer.parseInt(table.getModel().getValueAt(row, primKeyPosition).toString());
-        
-            try{      
-                PreparedStatement delete=conn.prepareStatement("DELETE from city WHERE id = ?;");
-                delete.setInt(1, id);
-                delete.executeUpdate();
-                tableModel.removeRow(row);
-
-            }catch(SQLException e){
-                  Logger.getLogger(Window.class.getName()).log(Level.SEVERE, null, e);  
-            }
-       
+        int row = table.getSelectedRow(); //Findet die selektierte Zeile
+        int id =  Integer.parseInt(table.getModel().getValueAt(row, primKeyPosition).toString()); //Findet den ID
+        try{      
+            //Erstellung und Einfuhrung von PreparedStatement zum Loschen der Zeile
+            PreparedStatement delete=conn.prepareStatement("DELETE from city WHERE id = ?;");
+            delete.setInt(1, id);
+            delete.executeUpdate();
+            tableModel.removeRow(row);
+        }catch(SQLException e){
+              Logger.getLogger(Window.class.getName()).log(Level.SEVERE, null, e);  
+        }  
     }//GEN-LAST:event_deleteButtonActionPerformed
-    private void values(){
-        try {
-            MD=conn.getMetaData();
-            ResultSet r=MD.getTables(null, null,null,null);
-            while(r.next()){
-                dropdown.addItem(r.getString(3));
+    private void dropdownValues(){
+        // Findung von Tabellen fur die Dropdown Liste
+        try { 
+            MD = conn.getMetaData();
+            ResultSet res = MD.getTables(null, null,null,null);
+            while(res.next()){
+                dropdown.addItem(res.getString(3));
             }
         } catch (SQLException ex) {
             Logger.getLogger(Window.class.getName()).log(Level.SEVERE, null, ex);
         }
         
     }
+    
     public static void main(String args[]) {
         
         java.awt.EventQueue.invokeLater(new Runnable() {
