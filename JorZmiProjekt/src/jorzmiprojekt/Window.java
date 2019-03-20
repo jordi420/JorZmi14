@@ -6,11 +6,17 @@
 package jorzmiprojekt;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.DatabaseMetaData;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.swing.DefaultComboBoxModel;
+import javax.swing.event.TableModelEvent;
+import javax.swing.event.TableModelListener;
 import javax.swing.table.DefaultTableModel;
 
 /**
@@ -54,7 +60,7 @@ public class Window extends javax.swing.JFrame {
         discButton = new javax.swing.JButton();
         DatabaseLabel = new javax.swing.JLabel();
         DatabaseField = new javax.swing.JTextField();
-        jComboBox1 = new javax.swing.JComboBox<>();
+        dropdown = new javax.swing.JComboBox<>();
         jScrollPane1 = new javax.swing.JScrollPane();
         table = new javax.swing.JTable();
 
@@ -90,8 +96,6 @@ public class Window extends javax.swing.JFrame {
 
         PasswordLabel.setText("Password");
 
-        PasswordField.setText(" ");
-
         conButton.setText("Connect");
         conButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -110,7 +114,12 @@ public class Window extends javax.swing.JFrame {
 
         DatabaseField.setText("world");
 
-        jComboBox1.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
+        dropdown.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] {}));
+        dropdown.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                dropdownActionPerformed(evt);
+            }
+        });
 
         table.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
@@ -157,7 +166,7 @@ public class Window extends javax.swing.JFrame {
                                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                                     .addComponent(PasswordField)
                                     .addComponent(PortField, javax.swing.GroupLayout.DEFAULT_SIZE, 55, Short.MAX_VALUE)))
-                            .addComponent(jComboBox1, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                            .addComponent(dropdown, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                         .addGap(215, 215, 215)
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                             .addComponent(conButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
@@ -185,7 +194,7 @@ public class Window extends javax.swing.JFrame {
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(DatabaseLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 23, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(DatabaseField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jComboBox1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(dropdown, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 158, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap(131, Short.MAX_VALUE))
@@ -229,7 +238,7 @@ public class Window extends javax.swing.JFrame {
             PortField.setEnabled(false);
             conButton.setEnabled(false);
             discButton.setEnabled(true);
-            cbxTables.setEnabled(true);
+            dropdown.setEnabled(true);
             
             MD = conn.getMetaData();
             ResultSet res_prim = MD.getPrimaryKeys(null, null, "city");
@@ -250,7 +259,7 @@ public class Window extends javax.swing.JFrame {
 
             ResultSet rs = MD.getTables(null, null, null, null);
             while (rs.next()) {
-                cbxTables.addItem(rs.getString(3));
+                dropdown.addItem(rs.getString(3));
                 //System.out.println(rs.getString(3));
             }
         } catch (SQLException ex) {
@@ -273,8 +282,8 @@ public class Window extends javax.swing.JFrame {
             conButton.setEnabled(true);
             discButton.setEnabled(false);
 
-            cbxTables.setModel(new DefaultComboBoxModel<String>());
-            cbxTables.setEnabled(false);
+            dropdown.setModel(new DefaultComboBoxModel<String>());
+            dropdown.setEnabled(false);
 
             table.setModel(new DefaultTableModel());
             table.setEnabled(false);
@@ -285,36 +294,88 @@ public class Window extends javax.swing.JFrame {
 
 
     }//GEN-LAST:event_discButtonActionPerformed
+        private void tableModelChanged(TableModelEvent e){
+        System.out.println("table changed");
+        int row = e.getFirstRow();
+        String columnName = 
+        table.getModel().getColumnName(e.getColumn());
+                
+        int id = 
+                Integer.parseInt(table.getModel().getValueAt(row, primKeyPosition).toString());
+          System.out.println(columnName +" " +  id);
 
-    /**
-     * @param args the command line arguments
-     */
-    public static void main(String args[]) {
-        /* Set the Nimbus look and feel */
-        //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
-        /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
-         * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
-         */
+        String entry_changed = 
+                table.getModel().getValueAt(row, e.getColumn()).toString();  
         try {
-            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
-                if ("Nimbus".equals(info.getName())) {
-                    javax.swing.UIManager.setLookAndFeel(info.getClassName());
-                    break;
-                }
-            }
-        } catch (ClassNotFoundException ex) {
-            java.util.logging.Logger.getLogger(Window.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        } catch (InstantiationException ex) {
-            java.util.logging.Logger.getLogger(Window.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        } catch (IllegalAccessException ex) {
-            java.util.logging.Logger.getLogger(Window.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        } catch (javax.swing.UnsupportedLookAndFeelException ex) {
-            java.util.logging.Logger.getLogger(Window.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            PreparedStatement update =
+                    conn.prepareStatement(
+                            "UPDATE city SET "+ columnName + "= ? WHERE " + primaryKey + " = ?");
+            update.setString(1, entry_changed);
+            update.setInt(2, id);
+            System.out.println(update);
+            System.out.println(update.executeUpdate() + " rows changed");
+            
+        } catch (SQLException ex) {
+            System.out.println("Error updating table");
+            javax.swing.JOptionPane.showMessageDialog(this, "Error updating table");
         }
-        //</editor-fold>
-        //</editor-fold>
+    }
+        
+    private void dropdownActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_dropdownActionPerformed
+        int num_columns = 0;
 
-        /* Create and display the form */
+        try {
+            ResultSet result = MD.getColumns(
+                    null, null, dropdown.getSelectedItem().toString(), null);
+
+            //tblEntries.removeAll();
+            tableModel = new DefaultTableModel();
+
+            while (result.next()) {
+                String columnName = result.getString(4);
+
+                tableModel.addColumn(columnName);
+                num_columns++;
+                //               int columnType = result.getInt(5);
+            }
+            table.setModel(tableModel);
+
+        } catch (SQLException ex) {
+            System.out.println("Error building column structure for table " + dropdown.getSelectedItem().toString());
+            javax.swing.JOptionPane.showMessageDialog(this, "Error building column structure for table " + dropdown.getSelectedItem().toString());
+        }
+
+        Statement stmt;
+        try {
+            stmt = conn.createStatement();
+            ResultSet res = stmt.executeQuery("SELECT * FROM " + dropdown.getSelectedItem().toString());
+
+            while (res.next()) {
+                Object[] row = new Object[num_columns];
+                for (int i = 1; i <= num_columns; i++) {
+                    row[i - 1] = res.getObject(i);
+                }
+                ((DefaultTableModel) table.getModel()).insertRow(res.getRow() - 1, row);
+            }
+            
+            table.getModel().addTableModelListener(new TableModelListener() {
+                @Override
+                public void tableChanged(TableModelEvent e) {
+                    System.out.println("table changed");
+                    tableModelChanged(e);
+                }
+            });
+
+        } catch (SQLException ex) {
+            System.out.println("Error building result table from database");
+            javax.swing.JOptionPane.showMessageDialog(this, "Error building result table from database");
+        }
+
+
+    }//GEN-LAST:event_dropdownActionPerformed
+
+    public static void main(String args[]) {
+        
         java.awt.EventQueue.invokeLater(new Runnable() {
             public void run() {
                 new Window().setVisible(true);
@@ -336,7 +397,7 @@ public class Window extends javax.swing.JFrame {
     private javax.swing.JComboBox<String> cbxTables;
     private javax.swing.JButton conButton;
     private javax.swing.JButton discButton;
-    private javax.swing.JComboBox<String> jComboBox1;
+    private javax.swing.JComboBox<String> dropdown;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JTable table;
     // End of variables declaration//GEN-END:variables
